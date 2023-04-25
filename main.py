@@ -2,7 +2,7 @@
 
 import socket
 import logging
-import threading # may use asyncio for multiple connections
+import threading  # may use asyncio for multiple connections
 
 HOST = 'localhost'
 SERVER_HOST = 'localhost'
@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 def handle(buffer: bytes, src_address: str, src_port: int, dst_address: str, dst_port: int) -> bytes:
     '''
-    can read in- and outgoing data. Returns buffer    
+    can read in- and outgoing data. Returns buffer
     '''
     logging.debug(f'{src_address, src_port} -> {dst_address, dst_port} {len(buffer)} bytes on thread {threading.current_thread()}')
     logging.info(f'Number of running threads: {threading.active_count()}')
@@ -73,10 +73,10 @@ def run_gateway(local_host: str, local_port: int,
     gateway_socket.listen(1)
     logging.info(f'Gateway server started {local_host, local_port}')
 
-    known_addresses = set() # keep clients in view
+    known_addresses = set()  # keep clients in view
 
     while True:
-        client_socket, client_address = gateway_socket.accept() #TODO how to leave this state???
+        client_socket, client_address = gateway_socket.accept()  # TODO how to leave this state???
         logging.info(f'Connecting {client_address, client_socket} to {remote_host, remote_port}')
         if client_address not in known_addresses:
             known_addresses.add(client_address)
@@ -86,7 +86,7 @@ def run_gateway(local_host: str, local_port: int,
             logging.info('Connection is running')
             server_to_client_thread = threading.Thread(target=send_data_to_client, args=(socket_to_server, client_socket))
             client_to_server_thread = threading.Thread(target=send_data_to_server, args=(client_socket, socket_to_server))
-            server_to_client_thread.start() #TODO instead of a simple while loop implement a thread pool or thread factory
+            server_to_client_thread.start()  # TODO instead of a simple while loop implement a thread pool or thread factory
             client_to_server_thread.start()
         except Exception as e:
             logging.error(repr(e))
