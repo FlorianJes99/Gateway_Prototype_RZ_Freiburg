@@ -1,41 +1,46 @@
 #!usr/bin/python3
 import asyncio
 import logging
+import time
 
-HOST = 'localhost'
+HOST = ''
 SERVER_HOST = 'localhost'
 LISTENING_PORT = 1234
 SERVER_PORT = 5900
 logging.basicConfig(level=logging.DEBUG)
 
 
-async def handle_client(client_reader, client_writer, server_host, server_port):
+async def send_data(reader: asyncio.StreamReader,
+                    writer: asyncio.StreamWriter):
+    try:
+        while not reader.at_eof():
+            writer.write(await reader.read(4096))
+    finally:
+        writer.close
+
+
+init_block = True
+
+
+async def handle_i_o(client_reader: asyncio.StreamReader,
+                     client_writer: asyncio.StreamWriter,
+                     server_host: str, server_port: int):
     server_reader, server_writer = await asyncio.open_connection(server_host, server_port)
-    while True:
-        # Wait for data from the client or server
-        client_data = await client_reader.read(4096)
-        logging.info(f'Reading from {client_reader}')
-        if not client_data:
-            break
-        server_data = await server_reader.read(4096)
-        logging.info(f'Reading from {server_reader}')
-        if not server_data:
-            break
-
-        # Send data to the other side
-        server_writer.write(client_data)
-        client_writer.write(server_data)
-
-        await asyncio.gather(client_writer.drain(), server_writer.drain())
-
-    # Close both connections when one is closed
-    client_writer.close()
-    server_writer.close()
+    to_server = send_data(client_reader, server_writer)
+    global init_block
+    if init_block is True:
+        print('Blocking for 60s')
+        time.sleep(60)
+        print('Blocking done')
+        init_block = False
+    to_client = send_data(server_reader, client_writer)
+    await asyncio.gather(to_server, to_client)
 
 
-async def run_proxy(proxy_port, server_host, server_port):
+async def gateway_connection(proxy_port: int, server_host: str,
+                             server_port: int):
     server = await asyncio.start_server(
-        lambda client_reader, client_writer: handle_client(client_reader, client_writer, server_host, server_port),
+        lambda client_reader, client_writer: handle_i_o(client_reader, client_writer, server_host, server_port),
         host='localhost',
         port=proxy_port)
     async with server:
@@ -43,7 +48,7 @@ async def run_proxy(proxy_port, server_host, server_port):
 
 
 def main():
-    asyncio.run(run_proxy(LISTENING_PORT, SERVER_HOST, SERVER_PORT))
+    asyncio.run(gateway_connection(LISTENING_PORT, SERVER_HOST, SERVER_PORT))
 
 
 if __name__ == "__main__":
