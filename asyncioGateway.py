@@ -20,18 +20,23 @@ async def send_data(reader: asyncio.StreamReader,
 
 
 init_block = True
+clients = {}
 
 
 async def handle_i_o(client_reader: asyncio.StreamReader,
                      client_writer: asyncio.StreamWriter,
                      server_host: str, server_port: int):
+    client_id = id(client_writer)
+    clients[client_id] = client_writer
+    print(len(clients))
     server_reader, server_writer = await asyncio.open_connection(server_host, server_port)
     to_server = send_data(client_reader, server_writer)
     global init_block
     if init_block is True:
         print('Blocking for 60s')
-        time.sleep(60)
+        time.sleep(20)
         print('Blocking done')
+        # could handle nova api request here for authentication and server address
         init_block = False
     to_client = send_data(server_reader, client_writer)
     await asyncio.gather(to_server, to_client)
