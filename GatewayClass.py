@@ -8,7 +8,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 INIT_BLOCK = True
 BUFFER_SIZE = 2048  # in bytes
-SLEEP_TIME = 5  # seconds
+SLEEP_TIME = 300  # seconds
 WS_MAX_SIZE = None  # keine MAX_SIZE
 # read_limit, max_queue und write_limit veraendern fuer performance tests
 
@@ -39,12 +39,11 @@ class GatewayWebsockets(object):
 
 
 class GatewaySockets(object):
-    def __init__(self, host: str, listening_port: int, pool_executor: ProcessPoolExecutor, args):
+    def __init__(self, host: str, listening_port: int, pool_executor: ProcessPoolExecutor):
         self.host = host
         self.listening_port = listening_port
         self.channels = []
         self.process_pool_executor = pool_executor
-        self.args = args
 
     async def start(self):
         server = await asyncio.start_server(
